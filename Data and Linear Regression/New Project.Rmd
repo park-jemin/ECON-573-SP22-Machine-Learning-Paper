@@ -1,0 +1,83 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+x_test = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/X_test.csv")
+x_train = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/X_train.csv")
+y_test = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/y_test.csv")
+y_train = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/y_train.csv")
+
+Test = merge(x_test, y_test, by.x = "carID")
+Test = Test %>%
+  select(-carID) %>%
+  mutate_at(
+    vars(transmission, fuelType), factor)
+
+Train = merge(x_train, y_train, by.x = "carID")
+Train = Train %>%
+  select(-carID) %>%
+  mutate_at(
+    vars(transmission, fuelType), factor)
+
+
+x_test = x_test %>%
+  select(-carID) %>%
+  mutate_at(
+    vars(transmission, fuelType), factor
+  )
+
+y_test = y_test %>%
+  select(-carID)
+
+x_train = x_train %>%
+  select(-carID) %>%
+  mutate_at(
+    vars(transmission, fuelType), factor
+  )
+
+y_train = y_train %>%
+  select(-carID)
+```
+
+
+
+**Linear Regression**
+```{r}
+Price_lm = lm(price~., data = Train)
+forward = step(Price_lm, direction = 'forward', trace = FALSE)
+forward
+backward = step(Price_lm, direction = 'backward', trace = FALSE)
+backward
+stepwise = step(Price_lm, direction = 'both', trace = FALSE)
+stepwise 
+```
+
+```{r}
+price_backward = lm(formula = price ~ model + year + transmission + mileage + 
+    fuelType + tax + mpg + engineSize, data = Train)
+
+summary(price_backward)
+```
+
+```{r, warning = F}
+test_actual = y_test$price
+preds_lm = predict(Price_lm, newdata = Test)
+rss_lm = sum((preds_lm  - test_actual) ^ 2)
+tss_lm = sum((test_actual - mean(test_actual)) ^ 2)
+rsq = 1 - rss_lm/tss_lm
+rsq
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
