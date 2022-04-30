@@ -1,0 +1,87 @@
+---
+title: |
+  | \vspace{5cm} \LARGE [Filler Title]
+  | \vspace{0.5cm} \Large ECON 573 Group 6
+author: "Jemin Park, Jonah Selom, Keegan McDowell"
+date: "4/30/2022"
+# setspace: doublespacing
+fontsize: 12pt
+documentclass: article
+geometry: margin=3cm
+indent: true
+output:
+  pdf_document:
+    highlight: tango
+    number_sections: true
+header-includes:
+  - \usepackage{setspace}\doublespacing
+  - \setlength{\parindent}{4em}
+  - \setlength{\parskip}{0em}
+
+---
+
+```{r setup, include=FALSE}
+# don't want to show code on default
+knitr::opts_chunk$set(echo = FALSE) 
+rm(list=ls())
+```
+
+\newpage
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+
+# Introduction 
+
+Filler paragraph 1
+
+Filler para 2
+
+# Data
+
+Discussion of data source
+
+## Data Preprocessing
+
+Discussion on cleaning and other stuff
+
+```{r data-import}
+# data import
+1
+```
+
+## Data Visualization
+
+(each into separate sections as needed)
+
+
+# Methods
+
+High level discussion on approach
+
+## Model 1
+
+Discussion & results
+
+## Model 2
+
+Discussion & results
+
+## Model 3
+
+Discussion & results
+
+## Model 4
+
+Discussion & results
+
+## Model 5
+
+Discussion & results
+
+# Conclusion
+
+Final discussion with interpretation from model, inferences, best results, etc.
+
