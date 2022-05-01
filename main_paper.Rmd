@@ -69,7 +69,134 @@ Discussion & results
 
 ## Model 2
 
-Discussion & results
+set.seed(1)
+library(MASS)
+library(leaps)
+install.packages("glmnet")
+library(glmnet)
+
+
+x_test = read.csv("X_test.csv")
+x_train = read.csv("X_train.csv")
+y_test = read.csv("y_test.csv")
+y_train = read.csv("y_train.csv")
+
+
+#lasso train
+xt = data.matrix(x_train[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
+yt = y_train$price
+
+cv.lasso = cv.glmnet(xt, yt, alpha = 1)
+
+best_lambda = cv.lasso$lambda.min
+best_lambda
+
+plot(cv.lasso)
+coef(cv.lasso)
+
+sqrt(cv.lasso$cvm[cv.lasso$lambda == cv.lasso$lambda.1se])
+
+#Best model
+best_model = glmnet(xt, yt, alpha = 1, lambda = best_lambda)
+coef(best_model)
+
+y_predicted = predict(best_model, s = best_lambda, newx = xt)
+
+#SST and SSE
+sst = sum((yt - mean(yt))^2)
+sse = sum((y_predicted - yt)^2)
+
+#R-squared
+rsq = 1 - sse/sst
+rsq
+
+#lasso test
+x = data.matrix(x_test[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
+y = y_test$price
+
+cv.lasso = cv.glmnet(x, y, alpha = 1)
+
+best_lambda = cv.lasso$lambda.min
+best_lambda
+
+plot(cv.lasso)
+coef(cv.lasso)
+
+sqrt(cv.lasso$cvm[cv.lasso$lambda == cv.lasso$lambda.1se])
+
+#Best model
+best_model = glmnet(x, y, alpha = 1, lambda = best_lambda)
+coef(best_model)
+
+y_predicted = predict(best_model, s = best_lambda, newx = x)
+
+
+#SST and SSE
+sst = sum((y - mean(y))^2)
+sse = sum((y_predicted - y)^2)
+
+#R-squared
+rsq = 1 - sse/sst
+rsq
+
+#Ridge train
+xt = data.matrix(x_rain[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
+yt = y_train$price
+
+cv.ridge = cv.glmnet(xt, yt, alpha = 0)
+
+best_lambda = cv.ridge$lambda.min
+best_lambda
+
+plot(cv.ridge)
+coef(cv.ridge)
+
+sqrt(cv.ridge$cvm[cv.ridge$lambda == cv.ridge$lambda.1se])
+
+#Best model
+best_model = glmnet(xt, yt, alpha = 0, lambda = best_lambda)
+coef(best_model)
+
+y_predicted = predict(best_model, s = best_lambda, newx = xt)
+
+
+#SST and SSE
+sst = sum((yt - mean(yt))^2)
+sse = sum((y_predicted - yt)^2)
+
+#R-squared
+rsq = 1 - sse/sst
+rsq
+
+
+#Ridge test
+x = data.matrix(x_test[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
+y = y_test$price
+
+cv.ridge = cv.glmnet(x, y, alpha = 0)
+
+best_lambda = cv.ridge$lambda.min
+best_lambda
+
+plot(cv.ridge)
+coef(cv.ridge)
+
+sqrt(cv.ridge$cvm[cv.ridge$lambda == cv.ridge$lambda.1se])
+
+#Best model
+best_model = glmnet(x, y, alpha = 0, lambda = best_lambda)
+coef(best_model)
+
+y_predicted = predict(best_model, s = best_lambda, newx = x)
+
+
+#SST and SSE
+sst = sum((y - mean(y))^2)
+sse = sum((y_predicted - y)^2)
+
+#R-squared
+rsq = 1 - sse/sst
+rsq
 
 ## Model 3
 
