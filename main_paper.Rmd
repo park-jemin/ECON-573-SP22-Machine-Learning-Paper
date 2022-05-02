@@ -1,6 +1,6 @@
 ---
 title: |
-  | \vspace{5cm} \LARGE [Filler Title]
+  | \vspace{5cm} \LARGE Predicting Used Car Prices
   | \vspace{0.5cm} \Large ECON 573 Group 6
 author: "Jemin Park, Jonah Selom, Keegan McDowell"
 date: "4/30/2022"
@@ -24,6 +24,16 @@ header-includes:
 # don't want to show code on default
 knitr::opts_chunk$set(echo = FALSE) 
 rm(list=ls())
+
+library(tidyverse) # cleaning
+library(ggplot2)
+
+library(MASS)
+library(leaps) # selection
+library(glmnet) # lasso
+library(gbm) # boosting
+library(randomForest) # bagging
+
 ```
 
 \newpage
@@ -43,45 +53,91 @@ Filler para 2
 
 # Data
 
-Discussion of data source
+The data used in this paper was found on Kaggle posted by a user who had originally taken the data from a larger set that included separate datasets for each individual car manufacturer. The original dataset was scraped from thousands as used car listings and was used to predict the selling price of a car that a friend of the creator was debating whether or not to sell. The creator then reshaped the product in order to generalize it more as a prediction model for used cars selling in the UK. The variables used, in this case in an attempt to predict the price of the vehicle, are transmission, mileage, fuel type, tax, miles per gallon, and engine size. The user who transformed the dataset into the one used in this paper was able to clean the data a bit more thoroughly, accounting for any issues made during the original creators scraping process so that the data would then be easier to use. They also changed the breakdown of the data, combining each of the manufacturers and instead split them into predetermined test and training sets, eliminating the randomness of that result.
+
 
 ## Data Preprocessing
 
-Discussion on cleaning and other stuff
+The data originally was divided into sections of x_test, x_train, y_test, and y_train. Knowing that some models would need the more complete dataset in order to run, the train data and the test data were both merged by their common column, which was the carID variable, being used as a common identifier between the split data. After that, there were two variables, transmission, showing whether the car was automatic, manual, or somewhere in between, and fuelType, including both types of gasoline, but also if the car is electric or a hybrid, that could be more useful as factor variables. It was also necessary to examine whether the data had a large amount of missing data, but it was relatively clean when taken from the source, so this was not a major issue. With these barriers out of the way, the data became easier to use through the regression methods used throughout the rest of the paper. 
 
 ```{r data-import}
-# data import
-1
+# read in all data, with character cols as factors
+x_test = read.csv("X_test.csv", stringsAsFactors=TRUE) 
+x_train = read.csv("X_train.csv", stringsAsFactors=TRUE)
+y_test = read.csv("y_test.csv", stringsAsFactors=TRUE)
+y_train = read.csv("y_train.csv", stringsAsFactors=TRUE)
+
+# join and remove carID
+test = merge(x_test, y_test, by.x = "carID")[,-1] 
+train = merge(x_train, y_train, by.x = "carID")[,-1]
+
+# summary(train)
+
+# length(unique(train$brand))
+# summary(train$brand)
+
 ```
 
+A potential issue with the data would come in trying to run the regression with the car models attribute involved. With 90 different car models, compared to having nearly 7500 total observations, the flexibility of the model becomes a question. Including the variable could lead the model to be too flexible, especially with a low number of observations (suprisingly, a Toyota Camry, one of the most popular used cars, has only 8 observations) causing it to follow any noise too closely and increases variance. A high flexibility can be good when looking solely for prediction, but can cause issues if it is controlling the results of the model too greatly. Collinearity could also be an issue between factors such as mileage and miles per gallon which are likely to decrease/increase as the years go on, but this should be less of an issue because, although they are related in that way, they will still be affecting the price of the car independently.
+
 ## Data Visualization
+
+
+
 
 (each into separate sections as needed)
 
 
 # Methods
 
-High level discussion on approach
+We are interested in building predictive models that accurately determine price based on the aforementioned covariates. While there exist the issues above, we believe for the purposes of this paper and for simplicity, we want to build strong, simple models that can best infer car prices. To do this, we will need to consider outcomes in which we can sufficiently compare test outcomes. 
 
-## Model 1
-
-Discussion & results
-
-## Model 2
-
-set.seed(1)
-library(MASS)
-library(leaps)
-install.packages("glmnet")
-library(glmnet)
+Fortunately, data was split beforehand (as part of a competition dataset), with 4960 observations in the training set, and 2672 in the test set. One key element of interest would be to observe how estimated test errors (in our case, we will use cross-validation error), and how they place may differ from modeled outcomes when calculating test error on the actual test set. For this paper, we will focus on the implementation and predictive ability of 5 key models: linear regression, LASSO regression, ridge regression, boosting, and random forests. 
 
 
-x_test = read.csv("X_test.csv")
-x_train = read.csv("X_train.csv")
-y_test = read.csv("y_test.csv")
-y_train = read.csv("y_train.csv")
+## Linear Regression
+
+```{r slr, include = FALSE}
+mod.slr = lm(price ~ .  - model , data = train)
+summary(mod.slr)
+
+train.lprice = log(train$price)
+mod.glm = lm(train.lprice ~ .  - model - price , data = train)
+summary(mod.glm)
 
 
+# training MSE
+mean(mod.slr$residuals^2)
+mean(mod.glm$residuals^2)
+
+# # test mse
+# test.lprice = log(test$price)
+# slr.pred = predict(mod.slr, x_test)
+# mean((slr.pred - test$price)^2)
+
+par(mfrow=c(2,2))
+plot(mod.slr)
+par(mfrow=c(2,2))
+plot(mod.glm)
+
+```
+
+We started building a simple multilinear model by regressing all predictive covariates *except* the car model on price. We first excluded `model` to give us an interpretable predictive model, and we found that nearly all the predictors except `fuelTypeElectric`, `fuelTypeOther`, and `transmissionOther` were significant at $0.001\%$ (with the “other” fuel type being significant at $0.01\%$), with an impressive $R^2$ of $0.7194$. We note that every brand listed has some significant predictability on their respective effects on price. However, upon examining diagnostic data, we see that the standardized residuals indicate irregularity in the upper quantiles. 
+
+So, we then tested a base model on the log of car price, we found that this addressed the issue of regularity in the model, while simultaneously increasing the significance of the predictors. This had improved the $R^2$ to $0.884$ on the base model that we were testing. Thus, continuing forward, we will take log price into full consideration for all following models. Below is the summary output for the log model on all predictors but the car model:
+
+```{r}
+summary(mod.glm)
+```
+
+Next, we want
+
+
+
+## LASSO Regression
+
+
+```{r}
 #lasso train
 xt = data.matrix(x_train[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
 yt = y_train$price
@@ -138,9 +194,18 @@ sse = sum((y_predicted - y)^2)
 #R-squared
 rsq = 1 - sse/sst
 rsq
+```
 
+
+
+## Ridge Regression
+
+Discussion & results
+
+
+```{r}
 #Ridge train
-xt = data.matrix(x_rain[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
+xt = data.matrix(x_train[, c('carID', 'year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')])
 yt = y_train$price
 
 cv.ridge = cv.glmnet(xt, yt, alpha = 0)
@@ -197,10 +262,7 @@ sse = sum((y_predicted - y)^2)
 #R-squared
 rsq = 1 - sse/sst
 rsq
-
-## Model 3
-
-Discussion & results
+```
 
 ## Model 4
 

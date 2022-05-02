@@ -3,19 +3,17 @@ library(tidyverse)
 ```
 
 ```{r}
-x_test = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/X_test.csv")
-x_train = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/X_train.csv")
-y_test = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/y_test.csv")
-y_train = read.csv("C:/Users/wkeegan/Documents/Econ 573/Project/y_train.csv")
+x_test = read.csv("X_test.csv")
+x_train = read.csv("X_train.csv")
+y_test = read.csv("y_test.csv")
+y_train = read.csv("y_train.csv")
 
-Test = merge(x_test, y_test, by.x = "carID")
-Test = Test %>%
+Test = merge(x_test, y_test, by.x = "carID") %>%
   select(-carID) %>%
   mutate_at(
     vars(transmission, fuelType), factor)
 
-Train = merge(x_train, y_train, by.x = "carID")
-Train = Train %>%
+Train = merge(x_train, y_train, by.x = "carID")%>%
   select(-carID) %>%
   mutate_at(
     vars(transmission, fuelType), factor)
