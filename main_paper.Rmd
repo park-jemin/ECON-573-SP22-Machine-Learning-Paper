@@ -195,7 +195,8 @@ sse = sum((y_predicted - y)^2)
 rsq = 1 - sse/sst
 rsq
 ```
-
+The LASSO regression stands for the Least Absolute Shrinkage and Selection Operator. The goal of the Lasso regression is to obtain the subset of predictors that minimizes prediction error for a response variable. The Lasso regression does this by causing some of the coefficients to shrink to zero to create a more efficient model. With alpha set at 1 and using regular price on the training set, the best lambda was found to be 32.0433. The train R Square for the lasso regression was 0.6674 with the RMSE being 9722.162. The test R square for lasso regression was found to be 0.6528 with the RMSE being 10315.55. In the training data set, the model explains 66.74% of variation in the response values of the training data. In the test data set, the model explains 65.28% of the variance in response values. When accounting for the difference in the R-squared of the training and test data sets, it makes sense that training R-squared is higher than test R-squared because the training set has a greater share of the data and accounts for more variance in price. 
+The Lasso regression puts emphasis on year, mileage, and engine size while bringing all other variables to 0. Year is an obvious variable to include into the model as newer cars often have more features, less wear, and are more desirable. Mileage is considered an important variable to include in the model because it is highly influential in determining the price of a used car as generally the higher mileage a car has the lower its price will be. Engine size is the final variable included in the model which indicates that cars with larger engines tend to cost more as they are more expensive to maintain and are found in new vehicles with higher value which translates to the used market. 	
 
 
 ## Ridge Regression
@@ -263,12 +264,76 @@ sse = sum((y_predicted - y)^2)
 rsq = 1 - sse/sst
 rsq
 ```
-
+The Ridge regression is used to analyze data that suffers from multicollinearity. RIdge regression addresses this problem by shrinking the coefficients to near zero which helps to prevent overfitting. With alpha set to 0, the best lambda was found to be 1025.15 for the training data set with a train R-squared of 0.6648 and an RMSE of 9707.688. THe test R-squared was 0.6505 with an RMSE of 10243.94. Similar to the Lasso regression, the test R-squared is higher than the train R-squared as it covers more of the data. In addition, variables like year and mileage that were included in the lasso regression were given importance in the ridge regression. Unlike the lasso, transmission and fuel type were given greater importance in ridge regression compared to lasso. The variables chosen in the ridge regression appear to be more inclusive of the data as a whole when considering that manual cars are often cheaper than their automatic counterparts and that the price of diesel is generally more expensive than gasoline which means that the price of diesel vehicles are generally higher.
 ## Model 4
 
-Discussion & results
+```{r}
+# bagging (recall m = p)
+bag.price = randomForest(y_train$price~., data=x_train, mtry=ncol(x_train)-1, importance=TRUE)
+bag.pred = predict(bag.price, newdata=x_test)
+
+# bagging test MSE
+mean((y_test$price - bag.pred)^2)
+
+#Chart
+plot(y_test$price, bag.pred)
+
+#Correlation
+cor(y_test$price, bag.pred)
+```
+Bagging (Random Forests) is a method which uses decision trees where it raises the overall stability of a model by improving accuracy, reducing variance thereby eliminating the overfitting of data. Running bagging on the test data resulted in a model that was highly predictive of the car’s price.
+The resulting chart had a 0.9695 correlation between the random forest model and the test set. The bagging Test MSE was 16715493, which is unusually high. Overall, the random forest model was extremely predictive at predicting used car prices.
+
 
 ## Model 5
+
+```{r}
+#Boosting
+library(gbm)
+set.seed(1)
+
+y_train$price = log(y_train$price)
+y_test$price = log(y_test$price)
+
+lambdas = 10 ^ seq(-10, 0, 0.1) # 100 lambdas
+log.lambdas = log10(lambdas)
+
+train.mse = rep(NA, length(lambdas))
+test.mse = rep(NA, length(lambdas))
+
+set.seed(1)
+for (i in 1:length(lambdas)) {
+  boost.price = gbm(y_train$price ~ ., data = (x_test[, c('year', 'transmission', 'mileage', 'fuelType', 'tax', 'mpg', 'engineSize')]), distribution="gaussian", n.trees=1000, shrinkage=lambdas[i])
+  
+  train.pred = predict(boost.price, newdata=x_train, n.trees=1000)
+  train.mse[i] = mean((train.pred - y_train$price)^2)
+  
+  test.pred = predict(boost.price, newdata=x_test, n.trees=1000)
+  test.mse[i] = mean((test.pred - y_test$price)^2)
+}
+
+
+par(mfrow=c(1, 2))
+plot(lambdas,train.mse,type="b",xlab=expression(shrinkage), ylab="Train MSE", col="red", pch=20)
+plot(log.lambdas,train.mse,type="b",xlab=expression(shrinkage), ylab="Train MSE", col="red", pch=20)
+
+
+# Minumum training lambda
+lambdas[which.min(train.mse)]
+
+# Minimum training MSE
+min(train.mse)
+
+# Minumum test lambda
+boost.min.lambda = lambdas[which.min(test.mse)]
+boost.min.lambda
+
+# Minimum test MSE
+min(test.mse)
+```
+Boosting is a process in which trees are grown and subsequent trees are created using the information of the previous trees to minimize training error. The boosting model employs 1000 trees to predict the prices of a used vehicle from all of the predictor variables. The optimal training lambda is essentially 0 (1e-10), while the training MSE is 0.4265. For the test set, the optimal lambda is 0.00398, while the test MSE is 0.4798. 
+
+
 
 Discussion & results
 
